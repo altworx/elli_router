@@ -1,3 +1,10 @@
+%%%-------------------------------------------------------------------
+%%% @author Adam Kovari <adam.kovari@altworx.com>
+%%% @copyright (C) 2016, Altworx s.r.o.
+%%% @doc
+%%%
+%%% @end
+%%%-------------------------------------------------------------------
 -module(elli_router_test_handler).
 
 -behaviour(elli_router_handler).
