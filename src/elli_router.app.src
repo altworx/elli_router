@@ -1,0 +1,16 @@
+{application, elli_router,
+ [{description, "Elli Router Application"},
+  {vsn, "0.1.0"},
+  {registered, []},
+  {applications,
+   [kernel,
+    stdlib,
+    elli
+   ]},
+  {env,[]},
+  {modules, []},
+
+  {maintainers, ["Adam Kovari"]},
+  {licenses, []},
+  {links, [{"GitHub","https://github.com/altworx/elli_router"}]}
+ ]}.
