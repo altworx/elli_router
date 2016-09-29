@@ -19,9 +19,9 @@ handle(Req, Args) when is_list(Args) ->
 handle(Req, #{router := Router, callback_args := CbArgs, host := Host} = _Args) ->
     Path = elli_request:path(Req),
 
-    case cowboy_router:execute(#{host => Host, path => Path}, #{dispatch => Router}) of
-        {ok, Bindings, #{handler := Module}} ->
-            elli_router_handler:handle(Module, Req, Bindings, CbArgs);
+    case elli_cowboy_router:execute(#{host => Host, path => Path}, #{dispatch => Router}) of
+        {ok, Bindings, #{handler := Module, handler_opts := HandlerOpts}} ->
+            elli_router_handler:handle(Module, Req, Bindings, maps:merge(HandlerOpts, CbArgs));
         {stop, 404} ->
             ignore;
         {stop, HttpCode} ->
@@ -37,5 +37,5 @@ handle_event(_Event, _Data, _Args) ->
 init_params(Params) when is_list(Params) ->
     init_params(maps:from_list(Params));
 init_params(#{routes := Routes, callback_args := CbArgs, host := Host}) ->
-    Router = cowboy_router:compile([{'_', Routes}]),
+    Router = elli_cowboy_router:compile([{'_', Routes}]),
     #{router => Router, callback_args => CbArgs, host => Host}.

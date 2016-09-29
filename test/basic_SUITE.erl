@@ -35,7 +35,7 @@
 init_per_suite(Config) ->
     {module, elli_router} = code:ensure_loaded(elli_router),
     {module, elli_middleware} = code:ensure_loaded(elli_middleware),
-    Routes = [{"/:where", elli_router_test_handler, []}],
+    Routes = [{"/test", elli_router_test_handler, []}],
     RouterArgs = elli_router:init_params(#{routes => Routes, callback_args => #{}, host => [<<"localhost">>]}),
     CbArgs = [{mods, [{elli_router, RouterArgs}]}],
     ElliOpts = [{callback, elli_middleware}, {callback_args, CbArgs}, {port, 3001}],
@@ -127,7 +127,7 @@ end_per_testcase(_TestCase, _Config) ->
 %% @end
 %%--------------------------------------------------------------------
 all() ->
-    [get_case].
+    [get_case, not_found_case].
 
 
 %%--------------------------------------------------------------------
@@ -155,12 +155,21 @@ all() ->
 %% @end
 %%--------------------------------------------------------------------
 get_case(doc) ->
-    ["Simply get '/' from the test handler"];
+    ["Get 200 from the test handler"];
 
 get_case(suite) ->
     [];
 
 get_case(Config) when is_list(Config) ->
     {ok, {{_Version, 200, _Reason}, _Headers, _Body}} = httpc:request("http://localhost:3001/test"),
-    _Body = "",
+    ok.
+
+not_found_case(doc) ->
+    ["Return 404 on non-existing url from the test handler"];
+
+not_found_case(suite) ->
+    [];
+
+not_found_case(Config) when is_list(Config) ->
+    {ok, {{_Version, 404, _Reason}, _Headers, _Body}} = httpc:request("http://localhost:3001/not_existing"),
     ok.
