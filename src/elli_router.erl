@@ -21,7 +21,21 @@ handle(Req, #{router := Router, callback_args := CbArgs, host := Host} = _Args) 
 
     case elli_cowboy_router:execute(#{host => Host, path => Path}, #{dispatch => Router}) of
         {ok, Bindings, #{handler := Module, handler_opts := HandlerOpts}} ->
-            elli_router_handler:handle(Module, Req, Bindings, maps:merge(HandlerOpts, CbArgs));
+            AllArgs = maps:merge(HandlerOpts, CbArgs),
+            try
+                elli_router_handler:handle(Module, Req, Bindings, AllArgs)
+            catch throw:{ResponseCode, Headers, Body} when is_integer(ResponseCode) ->
+                    {response, ResponseCode, Headers, Body};
+                  throw:Exc ->
+                    handle_event(request_throw, [Req, Exc, erlang:get_stacktrace()], AllArgs),
+                    {response, 500, [], <<"Internal server error">>};
+                  error:Error ->
+                    handle_event(request_error, [Req, Error, erlang:get_stacktrace()], AllArgs),
+                    {response, 500, [], <<"Internal server error">>};
+                  exit:Exit ->
+                    handle_event(request_exit, [Req, Exit, erlang:get_stacktrace()], AllArgs),
+                    {response, 500, [], <<"Internal server error">>}
+            end;
         {stop, 404} ->
             ignore;
         {stop, HttpCode} ->
@@ -30,6 +44,15 @@ handle(Req, #{router := Router, callback_args := CbArgs, host := Host} = _Args) 
 
 %% @doc: Handle request events, like request completed, exception
 %% thrown, client timeout, etc. Must return 'ok'.
+handle_event(request_throw, [Req, Exc, Stacktrace], Args) ->
+    error_logger:warning_msg("Elli Router throw event | Callback Args: ~p~nReqest: ~p~nStacktrace: ~s", [Args, Req, lager:pr_stacktrace(lists:reverse(Stacktrace), {throw, Exc})]),
+    ok;
+handle_event(request_error, [Req, Error, Stacktrace], Args) ->
+    error_logger:error_msg("Elli Router error event | Callback Args: ~p~nReqest: ~p~nStacktrace: ~s", [Args, Req, lager:pr_stacktrace(lists:reverse(Stacktrace), {error, Error})]),
+    ok;
+handle_event(request_exit, [Req, Exit, Stacktrace], Args) ->
+    error_logger:error_msg("Elli Router exit event | Callback Args: ~p~nReqest: ~p~nStacktrace: ~s", [Args, Req, lager:pr_stacktrace(lists:reverse(Stacktrace), {exit, Exit})]),
+    ok;
 handle_event(_Event, _Data, _Args) ->
     ok.
 
